@@ -1,9 +1,8 @@
 "use client";
 
-import { PDFDocument } from "pdf-lib";
-import { useState } from "react";
-import { pdfjs } from "react-pdf";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,9 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { PDFDocument } from "pdf-lib";
+import { useCallback, useEffect, useState } from "react";
+import { pdfjs } from "react-pdf";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -23,15 +23,65 @@ export const PdfPreview = () => {
   const [file, setFile] = useState<File | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<number[][]>([]);
-  const [usedPages, setUsedPages] = useState<Set<number>>(new Set());
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [range, setRange] = useState<{
     start: number | null;
     end: number | null;
   }>({
-    start: null,
-    end: null,
+    start: 0,
+    end: 0,
   });
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  // Mover la función updatePdfPreview aquí arriba y memoizarla con useCallback
+  const updatePdfPreview = useCallback(async () => {
+    if (!file) {
+      alert("Por favor cargue un pdf");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const totalPages = pdfDoc.getPageCount();
+
+      // Todas las páginas que se deben excluir
+      const pagesToExclude = new Set<number>();
+      selectedGroups.forEach((group) => {
+        group.forEach((page) => pagesToExclude.add(page));
+      });
+
+      // Create a new PDF excluding the selected pages
+      const newPdf = await PDFDocument.create();
+      for (let i = 0; i < totalPages; i++) {
+        if (!pagesToExclude.has(i + 1)) {
+          const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+          newPdf.addPage(copiedPage);
+        }
+      }
+
+      // Save the new PDF and generate a blob URL
+      const pdfBytes = await newPdf.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const newUrl = URL.createObjectURL(blob);
+
+      // Update the iframe source with the new PDF
+      setFileUrl(newUrl);
+    } catch (error) {
+      alert("An error occurred while processing the PDF.");
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [file, selectedGroups]);
+
+  // useEffect hook para actualizar la vista previa del PDF cuando cambian los grupos seleccionados
+  useEffect(() => {
+    if (file) {
+      updatePdfPreview();
+    }
+  }, [file, selectedGroups, updatePdfPreview]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0] || null;
@@ -66,26 +116,22 @@ export const PdfPreview = () => {
     }
   };
 
-  const handleSaveGroup = () => {
+  const handleSaveGroup = async () => {
     const { start, end } = range;
 
     if (!start || !end || start > end || start < 1 || end > (numPages || 0)) {
-      alert("Please define a valid range.");
+      alert("Por favor, defina un intervalo válido.");
       return;
     }
 
     const group = Array.from({ length: end - start + 1 }, (_, i) => start + i);
     setSelectedGroups((prev) => [...prev, group]);
-    setUsedPages((prev) => {
-      const newSet = new Set(prev);
-      group.forEach((page) => newSet.add(page));
-      return newSet;
-    });
-    setRange({ start: null, end: null });
+    setRange({ start: 0, end: 0 });
   };
 
-  const handleDeleteGroup = (index: number) => {
+  const handleDeleteGroup = async (index: number) => {
     setSelectedGroups((prev) => prev.filter((_, i) => i !== index));
+    setRange({ start: 0, end: 0 }); // Reset the range
   };
 
   const handleGeneratePdfs = async () => {
@@ -118,17 +164,11 @@ export const PdfPreview = () => {
         link.click();
       }
     } catch (error) {
-      alert("An error occurred while processing the PDF.");
+      alert("Un error ha ocurrido al generar el PDF");
       console.error(error);
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const getAvailablePages = () => {
-    return Array.from({ length: numPages || 0 }, (_, i) => i + 1).filter(
-      (page) => !usedPages.has(page) // Excluir páginas usadas
-    );
   };
 
   return (
@@ -160,7 +200,7 @@ export const PdfPreview = () => {
             <CardContent>
               <div className="w-full h-[600px] overflow-auto border border-gray-200 rounded-lg">
                 <iframe
-                  src={`${fileUrl}`}
+                  src={fileUrl}
                   className="w-full h-[600px]"
                   title="PDF Preview"
                 />
@@ -170,7 +210,7 @@ export const PdfPreview = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Seleciona Paginas:</CardTitle>
+              <CardTitle>Seleciona Paginas para Crear Grupo:</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
@@ -182,14 +222,19 @@ export const PdfPreview = () => {
                     <SelectValue placeholder="Inicio" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailablePages().map((pageNumber) => (
-                      <SelectItem
-                        key={pageNumber}
-                        value={pageNumber.toString()}
-                      >
-                        Página {pageNumber}
-                      </SelectItem>
-                    ))}
+                    {Array.from({ length: numPages || 0 }, (_, i) => i + 1)
+                      .filter(
+                        (pageNumber) =>
+                          !selectedGroups.flat().includes(pageNumber)
+                      )
+                      .map((pageNumber) => (
+                        <SelectItem
+                          key={pageNumber}
+                          value={pageNumber.toString()}
+                        >
+                          Página {pageNumber}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <Select
@@ -200,14 +245,19 @@ export const PdfPreview = () => {
                     <SelectValue placeholder="Fin" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailablePages().map((pageNumber) => (
-                      <SelectItem
-                        key={pageNumber}
-                        value={pageNumber.toString()}
-                      >
-                        Página {pageNumber}
-                      </SelectItem>
-                    ))}
+                    {Array.from({ length: numPages || 0 }, (_, i) => i + 1)
+                      .filter(
+                        (pageNumber) =>
+                          !selectedGroups.flat().includes(pageNumber)
+                      )
+                      .map((pageNumber) => (
+                        <SelectItem
+                          key={pageNumber}
+                          value={pageNumber.toString()}
+                        >
+                          Página {pageNumber}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -227,7 +277,7 @@ export const PdfPreview = () => {
                         className="flex justify-between items-center bg-gray-100 p-2 rounded text-sm"
                       >
                         <span>
-                          Nuevo PDF {index + 1}: Pages {group.join(", ")}
+                          Nuevo PDF {index + 1}: Páginas {group.join(", ")}
                         </span>
                         <Button
                           variant="destructive"
@@ -252,12 +302,12 @@ export const PdfPreview = () => {
                 size="sm"
                 onClick={handleGeneratePdfs}
                 disabled={isProcessing}
-                className="w-full"
+                className="w-full mt-4"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processando...
+                    Generar PDFs...
                   </>
                 ) : (
                   "Generar PDFs"
