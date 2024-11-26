@@ -1,20 +1,12 @@
 "use client";
-
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FileText, Loader2, Trash2, Upload } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { PDFDocument } from "pdf-lib";
 import { useCallback, useEffect, useState } from "react";
 import { pdfjs } from "react-pdf";
+import PageSelector from "./mini-components/PageSelector";
+import PdfUpload from "./mini-components/PdfUpload";
+import PdfViewer from "./mini-components/PdfViewer";
+import SelectedGroups from "./mini-components/SelectedGroups";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -24,28 +16,14 @@ interface Range {
 }
 
 export const PdfPreview = () => {
-  //Archivo PDF que se va a procesar
-  const [file, setFile] = useState<File | null>(null);
-  //URL del archivo PDF que se va a mostrar
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  //Número de páginas del archivo PDF Original
+  const [file, setFile] = useState<File | null>(null);//Archivo PDF que se va a procesar
+  const [fileUrl, setFileUrl] = useState<string | null>(null);//URL del archivo PDF que se va a mostrar
   const [numPagesOrigin, setNumPages] = useState<number | null>(null);//Numero Total de Páginas del PDF
   const [paginasOrigin, setPaginasOrigin] = useState<number[]>([]);//Array con las pagina de PDF original[1,2,3....,50,51,52...]
-  //Número de páginas del archivo PDF Provisional
-  const [paginasEdited, setPaginasEdited] = useState<number[]>([]);//Array con las pagina de PDF provisional
-  //Grupos de páginas que se van a procesar
-  const [selectedGroups, setSelectedGroups] = useState<number[][]>([]);
-  //Indica si se está procesando el archivo PDF
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  //Intervalo de páginas que se van a procesar
-  const [range, setRange] = useState<Range>({
-    start: 0,
-    end: 0,
-  });
-
+  const [selectedGroups, setSelectedGroups] = useState<number[][]>([]);//Grupos de páginas que se van a procesar
+  const [isProcessing, setIsProcessing] = useState<boolean>(false); //Indica si se está procesando el archivo PDF
+  const [range, setRange] = useState<Range>({ start: 0, end: 0, });  //Intervalo de páginas que se van a procesar
   const [numPdfGenerado, setNumPdfGenerado] = useState<number>(0)
-
-
 
   // Función que actualiza el PDF previsualizado
   const updatePdfPreview = useCallback(async () => {
@@ -79,21 +57,13 @@ export const PdfPreview = () => {
 
       // Guarda el nuevo PDF y genera una URL de blob
       const pdfBytes = await newPdf.save();
-      const totalPaginasEdited = newPdf.getPageCount();
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const newUrl = URL.createObjectURL(blob);
-
-
-      // numero total de pagina de pdf provisional
-      setPaginasEdited(Array.from({ length: totalPaginasEdited }, (_, i) => i + 1)); //array de pagina de pdf provisional
 
       //Actualizamos la URL del PDF Editado
       setFileUrl(newUrl);
 
       const paginasDisponible = paginasOrigin.filter((pageNumber) => !selectedGroups.flat().includes(pageNumber))
-
-      // console.log(paginasOrigin)
-      // console.log(paginasEdited)
 
       setRange({ start: paginasDisponible[0], end: paginasDisponible[0] });
     } catch (error) {
@@ -102,7 +72,7 @@ export const PdfPreview = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [file, selectedGroups]);
+  }, [file, selectedGroups, paginasOrigin]);
 
 
   // useEffect hook para actualizar la vista previa del PDF cuando cambian los grupos seleccionados
@@ -112,15 +82,15 @@ export const PdfPreview = () => {
     }
   }, [file, selectedGroups, updatePdfPreview]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFile = e.target.files?.[0] || null;
-    if (uploadedFile && uploadedFile.type === "application/pdf") {
+  const handleFileChange = async (filePDF: File) => {
 
-      const arrayBuffer = await uploadedFile.arrayBuffer();
+    if (filePDF && filePDF.type === "application/pdf") {
+
+      const arrayBuffer = await filePDF.arrayBuffer();
       const blob = new Blob([arrayBuffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
 
-      setFile(uploadedFile);
+      setFile(filePDF);
       setFileUrl(url);
 
       const loadingTask = pdfjs.getDocument(arrayBuffer);
@@ -136,7 +106,6 @@ export const PdfPreview = () => {
       alert("Por Favor, Suba un archivo pdf");
     }
   };
-
 
   const handleRangeChange = (
     type: "start" | "end",
@@ -173,7 +142,7 @@ export const PdfPreview = () => {
 
   const handleGeneratePdfs = async () => {
     if (!file || selectedGroups.length === 0) {
-      alert("Please upload a PDF file and define at least one group.");
+      alert("Por favor, suba un archivo PDF y defina al menos un grupo");
       return;
     }
 
@@ -198,7 +167,7 @@ export const PdfPreview = () => {
 
         const link = document.createElement("a");
         link.href = downloadUrl;
-        link.download = `Group_${group.join("_")}.pdf`;
+        link.download = `Pagina_${group[0]}_a_${group[group.length - 1]}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -217,154 +186,32 @@ export const PdfPreview = () => {
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
       {!fileUrl && !numPagesOrigin && (
-
-        <Card className="w-full max-w-md mx-auto shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-center">Sube PDF</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">
-                  Haz clic para seleccionar un archivo PDF o arrastra y suelta aquí
-                </p>
-              </div>
-              <Input
-                id="file-upload"
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-          </CardContent>
-        </Card>
-
+        <PdfUpload onFileChange={handleFileChange} />
       )}
 
       {fileUrl && numPagesOrigin && (
         <div className="flex flex-col lg:flex-row gap-6">
-          <Card className="w-full lg:w-2/3 h-[calc(100vh-2rem)]">
-            <CardContent className="h-full p-4">
-              <iframe
-                src={fileUrl}
-                className="w-full h-full rounded"
-                title="PDF Preview"
-                style={{ border: 'none' }}
-              />
-            </CardContent>
-          </Card>
+          <PdfViewer fileUrl={fileUrl} />
 
           <Card className="w-full lg:w-1/3 flex flex-col h-[calc(100vh-2rem)]">
-            <CardHeader>
-              <CardTitle>Seleciona Paginas para Crear Grupo:</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col space-y-4 overflow-hidden">
-              <div className="flex gap-4">
-                <Select
-                  value={range.start?.toString()}
+            <CardContent className="flex-grow flex flex-col space-y-4 overflow-hidden py-4">
 
-                  onValueChange={(value) => handleRangeChange("start", value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={range.start?.toString()} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paginasOrigin
-                      .filter(
-                        (pageNumber) =>
-                          !selectedGroups.flat().includes(pageNumber)
-                      )
-                      .map((pageNumber, index) => (
-                        <SelectItem
-                          key={pageNumber}
-                          value={pageNumber.toString()}
-                        >
-                          {`Página ${pageNumber} - (${index + 1})`}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={range.end?.toString()}
-                  onValueChange={(value) => handleRangeChange("end", value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={range.end?.toString()} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paginasOrigin.filter(
-                      (pageNumber) =>
-                        !selectedGroups.flat().includes(pageNumber)
-                    ).map((pageNumber, index) => (
-                      <SelectItem
-                        key={pageNumber}
-                        value={pageNumber.toString()}
-                      >
-                        {`Página ${pageNumber} - (${index + 1})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleSaveGroup} className="w-full">
-                Salvar Grupo
-              </Button>
+              <PageSelector
+                paginasOrigin={paginasOrigin}
+                selectedGroups={selectedGroups}
+                range={range}
+                onRangeChange={handleRangeChange}
+                onSaveGroup={handleSaveGroup}
+                handleRangeChange={handleRangeChange}
+              />
 
-              <div className="flex-grow flex flex-col min-h-0">
-                <h3 className="text-base font-semibold mb-2">
-                  Grupos Selecionados:
-                </h3>
-                {selectedGroups.length > 0 ? (
-                  <div className="flex-grow overflow-y-auto pr-2 -mr-2">
-                    <ul className="space-y-2">
-                      {selectedGroups.map((group, index) => (
-                        <li
-                          key={index}
-                          className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-3 rounded-md"
-                        >
-                          <span className="flex items-center flex-grow mr-2 min-w-0">
-                            <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">
-                              Nuevo PDF {index + 1}: Páginas {group[0]} a {group[group.length - 1]}
-                            </span>
-                          </span>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDeleteGroup(index)}
-                            className="flex-shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <Alert>
-                    <AlertDescription>
-                      No hay grupos definidos aún.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              <Button
-                size="sm"
-                onClick={handleGeneratePdfs}
-                disabled={isProcessing || selectedGroups.length === 0}
-                className="w-full mt-4 flex-shrink-0"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    PDF Generados {numPdfGenerado} de {selectedGroups.length}
-                  </>
-                ) : (
-                  "Generar PDFs"
-                )}
-              </Button>
+              <SelectedGroups
+                selectedGroups={selectedGroups}
+                onDeleteGroup={handleDeleteGroup}
+                isProcessing={isProcessing}
+                numPdfGenerado={numPdfGenerado}
+                onGeneratePdfs={handleGeneratePdfs}
+              />
 
             </CardContent>
           </Card>
