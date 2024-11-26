@@ -1,4 +1,4 @@
-import { PdfPreview } from "@/components/PdfPreview";
+import { PdfPreview } from "@/components/cortadorPdf/PdfPreview";
 
 export default function Home() {
   return (

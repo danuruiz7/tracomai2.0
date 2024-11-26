@@ -1,13 +1,6 @@
-"use client";
-import { Card, CardContent } from "@/components/ui/card";
 import { PDFDocument } from "pdf-lib";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { pdfjs } from "react-pdf";
-import PageSelector from "./mini-components/PageSelector";
-import PdfUpload from "./mini-components/PdfUpload";
-import PdfViewer from "./mini-components/PdfViewer";
-import SelectedGroups from "./mini-components/SelectedGroups";
-
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface Range {
@@ -15,72 +8,16 @@ interface Range {
   end: number | null;
 }
 
-export const PdfPreview = () => {
+export const usePdfProcesador = () => {
   const [file, setFile] = useState<File | null>(null);//Archivo PDF que se va a procesar
   const [fileUrl, setFileUrl] = useState<string | null>(null);//URL del archivo PDF que se va a mostrar
+  const [range, setRange] = useState<Range>({ start: 0, end: 0, });  //Intervalo de páginas que se van a procesar
   const [numPagesOrigin, setNumPages] = useState<number | null>(null);//Numero Total de Páginas del PDF
   const [paginasOrigin, setPaginasOrigin] = useState<number[]>([]);//Array con las pagina de PDF original[1,2,3....,50,51,52...]
   const [selectedGroups, setSelectedGroups] = useState<number[][]>([]);//Grupos de páginas que se van a procesar
   const [isProcessing, setIsProcessing] = useState<boolean>(false); //Indica si se está procesando el archivo PDF
-  const [range, setRange] = useState<Range>({ start: 0, end: 0, });  //Intervalo de páginas que se van a procesar
   const [numPdfGenerado, setNumPdfGenerado] = useState<number>(0)
 
-  // Función que actualiza el PDF previsualizado
-  const updatePdfPreview = useCallback(async () => {
-    if (!file) {
-      alert("Por favor cargue un pdf");
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      // Carga el archivo PDF Original en memoria
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const totalPagesOriginal = pdfDoc.getPageCount();
-
-      // Todas las páginas que se deben excluir
-      const pagesToExclude = new Set<number>();
-      selectedGroups.forEach((group) => {
-        group.forEach((page) => pagesToExclude.add(page));
-      });
-
-      // Crea un nuevo PDF excluyendo las páginas seleccionadas
-      const newPdf = await PDFDocument.create();
-      for (let i = 0; i < totalPagesOriginal; i++) {
-        if (!pagesToExclude.has(i + 1)) {
-          const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
-          newPdf.addPage(copiedPage);
-        }
-      }
-
-      // Guarda el nuevo PDF y genera una URL de blob
-      const pdfBytes = await newPdf.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const newUrl = URL.createObjectURL(blob);
-
-      //Actualizamos la URL del PDF Editado
-      setFileUrl(newUrl);
-
-      const paginasDisponible = paginasOrigin.filter((pageNumber) => !selectedGroups.flat().includes(pageNumber))
-
-      setRange({ start: paginasDisponible[0], end: paginasDisponible[0] });
-    } catch (error) {
-      alert("Error mientres se cargaba el preview");
-      console.error(error);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [file, selectedGroups, paginasOrigin]);
-
-
-  // useEffect hook para actualizar la vista previa del PDF cuando cambian los grupos seleccionados
-  useEffect(() => {
-    if (file) {
-      updatePdfPreview();
-    }
-  }, [file, selectedGroups, updatePdfPreview]);
 
   const handleFileChange = async (filePDF: File) => {
 
@@ -167,7 +104,7 @@ export const PdfPreview = () => {
 
         const link = document.createElement("a");
         link.href = downloadUrl;
-        link.download = `Pagina_${group[0]}_a_${group[group.length - 1]}.pdf`;
+        link.download = `${(file.name.replace(/\s+/g, ""))}_${group[0]}_a_${group[group.length - 1]}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -183,40 +120,71 @@ export const PdfPreview = () => {
     }
   };
 
-  return (
-    <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
-      {!fileUrl && !numPagesOrigin && (
-        <PdfUpload onFileChange={handleFileChange} />
-      )}
 
-      {fileUrl && numPagesOrigin && (
-        <div className="flex flex-col lg:flex-row gap-6">
-          <PdfViewer fileUrl={fileUrl} />
+  // Función que actualiza el PDF previsualizado
+  const updatePdfPreview = useCallback(async () => {
+    if (!file) {
+      alert("Por favor cargue un pdf");
+      return;
+    }
 
-          <Card className="w-full lg:w-1/3 flex flex-col h-[calc(100vh-2rem)]">
-            <CardContent className="flex-grow flex flex-col space-y-4 overflow-hidden py-4">
+    setIsProcessing(true);
 
-              <PageSelector
-                paginasOrigin={paginasOrigin}
-                selectedGroups={selectedGroups}
-                range={range}
-                onRangeChange={handleRangeChange}
-                onSaveGroup={handleSaveGroup}
-                handleRangeChange={handleRangeChange}
-              />
+    try {
+      // Carga el archivo PDF Original en memoria
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const totalPagesOriginal = pdfDoc.getPageCount();
 
-              <SelectedGroups
-                selectedGroups={selectedGroups}
-                onDeleteGroup={handleDeleteGroup}
-                isProcessing={isProcessing}
-                numPdfGenerado={numPdfGenerado}
-                onGeneratePdfs={handleGeneratePdfs}
-              />
+      // Todas las páginas que se deben excluir
+      const pagesToExclude = new Set<number>();
+      selectedGroups.forEach((group) => {
+        group.forEach((page) => pagesToExclude.add(page));
+      });
 
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div >
-  );
+      // Crea un nuevo PDF excluyendo las páginas seleccionadas
+      const newPdf = await PDFDocument.create();
+      for (let i = 0; i < totalPagesOriginal; i++) {
+        if (!pagesToExclude.has(i + 1)) {
+          const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+          newPdf.addPage(copiedPage);
+        }
+      }
+
+      // Guarda el nuevo PDF y genera una URL de blob
+      const pdfBytes = await newPdf.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const newUrl = URL.createObjectURL(blob);
+
+      //Actualizamos la URL del PDF Editado
+      setFileUrl(newUrl);
+
+      const paginasDisponible = paginasOrigin.filter((pageNumber) => !selectedGroups.flat().includes(pageNumber))
+
+      setRange({ start: paginasDisponible[0], end: paginasDisponible[0] });
+    } catch (error) {
+      alert("Error mientres se cargaba el preview");
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [file, selectedGroups, paginasOrigin]);
+
+  return {
+    file,
+    fileUrl,
+    range,
+    numPagesOrigin,
+    paginasOrigin,
+    selectedGroups,
+    isProcessing,
+    numPdfGenerado,
+    handleFileChange,
+    handleRangeChange,
+    handleSaveGroup,
+    handleDeleteGroup,
+    handleGeneratePdfs,
+    updatePdfPreview,
+  };
+
 };

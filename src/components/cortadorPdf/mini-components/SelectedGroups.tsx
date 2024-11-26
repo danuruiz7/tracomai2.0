@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/cortadorPdf/ui/button";
 import { FileText, Loader2, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 
