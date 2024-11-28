@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/context/AuthContext";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -28,11 +29,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-300`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased absolute inset-0 bg-gray-200`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
-    </html>
+    </html >
   );
 }
+

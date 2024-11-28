@@ -1,6 +1,6 @@
-import { Button } from "@/components/cortadorPdf/ui/button";
-import { FileText, Loader2, Trash2 } from "lucide-react";
-import { Alert, AlertDescription } from "../ui/alert";
+import { Button } from "@/components/ui/button";
+import { Bot, FileText, Trash2 } from "lucide-react";
+import { Alert, AlertDescription } from "../../ui/alert";
 
 interface SelectedGroupsProps {
   selectedGroups: number[][];
@@ -8,23 +8,21 @@ interface SelectedGroupsProps {
   isProcessing: boolean;
   numPdfGenerado: number;
   onGeneratePdfs: () => void;
+  sendToOpenai: () => void;
 }
 
-const SelectedGroups: React.FC<SelectedGroupsProps> = ({
-  selectedGroups,
-  onDeleteGroup,
-  isProcessing,
-  numPdfGenerado,
-  onGeneratePdfs,
-}) => {
+const SelectedGroups = ({ selectedGroups, onDeleteGroup, isProcessing, numPdfGenerado, onGeneratePdfs, sendToOpenai }: SelectedGroupsProps) => {
+
+
+
+
   return (
     <div className="flex-grow flex flex-col min-h-0">
-      <h3 className="text-base font-semibold mb-2">
-        Grupos Selecionados:
-      </h3>
+      <h3 className="text-base font-semibold mb-2">Grupos Seleccionados:</h3>
       {selectedGroups.length > 0 ? (
         <>
-          <div className="flex-grow overflow-y-auto pr-2 -mr-2">
+          {/* Contenedor con scroll dinámico */}
+          <div className="flex-grow overflow-y-auto h-[300px]">
             <ul className="space-y-2">
               {selectedGroups.map((group, index) => (
                 <li
@@ -49,30 +47,50 @@ const SelectedGroups: React.FC<SelectedGroupsProps> = ({
               ))}
             </ul>
           </div>
+          {/* Botón para generar pdfs */}
           <Button
             size="sm"
             onClick={onGeneratePdfs}
             disabled={isProcessing || selectedGroups.length === 0}
-            className="w-full mt-4 flex-shrink-0"
+            className="w-full mt-4 flex-shrink-0  select-none bg-red-500 border border-transparent transition-all  hover:text-red-500 hover:bg-white hover:border hover:border-red-500 active:translate-y-[0.10rem]"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <FileText className="size-4 animate-spin" />
                 PDF Generados {numPdfGenerado} de {selectedGroups.length}
               </>
             ) : (
-              "Generar PDFs"
+              <>
+                <FileText className="size-4" />
+                Descargar {selectedGroups.length} PDF{selectedGroups.length > 1 ? "s" : ""}
+              </>
+            )}
+          </Button>
+          {/* Botón para envia a la api de openai */}
+          <Button
+            size="sm"
+            onClick={sendToOpenai}
+            disabled={isProcessing || selectedGroups.length === 0}
+            className="w-full mt-4 flex-shrink-0  select-none bg-green-500 border border-transparent transition-all  hover:text-green-500 hover:bg-white hover:border hover:border-green-500 active:translate-y-[0.10rem]"
+          >
+            {isProcessing ? (
+              <>
+                <Bot className="size-4 animate-spin" />
+                PDF Generados {numPdfGenerado} de {selectedGroups.length}
+              </>
+            ) : (
+              <>
+                <Bot className="size-4" />
+                Leer PDF  {selectedGroups.length} PDF{selectedGroups.length > 1 ? "s" : ""} con AI
+              </>
             )}
           </Button>
         </>
       ) : (
         <Alert>
-          <AlertDescription>
-            No hay grupos definidos aún.
-          </AlertDescription>
+          <AlertDescription>No hay grupos definidos aún.</AlertDescription>
         </Alert>
       )}
-
     </div>
   );
 };

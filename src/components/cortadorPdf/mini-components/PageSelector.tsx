@@ -1,5 +1,5 @@
-import { Button } from "@/components/cortadorPdf/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/cortadorPdf/ui/select";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -81,7 +81,9 @@ const PageSelector = ({ paginasOrigin, selectedGroups, range, onRangeChange, onS
           </>
         )
       }
-      <Button onClick={onSaveGroup} className="w-full select-none" disabled={!existPage}>
+      <Button onClick={onSaveGroup}
+        className="w-full select-none bg-blue-500 border border-transparent transition-all  hover:text-blue-500 hover:bg-white hover:border hover:border-blue-500 active:translate-y-[0.10rem]"
+        disabled={!existPage}>
         {existPage ? "Salvar Grupo" : "(No hay páginas disponibles)"}
       </Button>
     </div>

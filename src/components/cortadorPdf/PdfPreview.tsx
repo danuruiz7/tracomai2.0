@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/cortadorPdf/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEffect } from "react";
 import { usePdfProcesador } from "./hook/usePdfProcesador";
 import PageSelector from "./mini-components/PageSelector";
@@ -9,6 +9,7 @@ import PdfViewer from "./mini-components/PdfViewer";
 import SelectedGroups from "./mini-components/SelectedGroups";
 
 export const PdfPreview = () => {
+
   const {
     file,
     fileUrl,
@@ -23,6 +24,7 @@ export const PdfPreview = () => {
     handleSaveGroup,
     handleDeleteGroup,
     handleGeneratePdfs,
+    sendToOpenai,
     updatePdfPreview,
   } = usePdfProcesador();
 
@@ -34,16 +36,16 @@ export const PdfPreview = () => {
   }, [file, selectedGroups, updatePdfPreview]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-4 ">
       {!fileUrl && !numPagesOrigin && (
         <PdfUpload onFileChange={handleFileChange} />
       )}
 
       {fileUrl && numPagesOrigin && (
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 ">
           <PdfViewer fileUrl={fileUrl} />
 
-          <Card className="w-full lg:w-1/3 flex flex-col h-[calc(100vh-2rem)]">
+          <Card className="w-full lg:w-1/3 flex flex-col ">
             <CardContent className="flex-grow flex flex-col space-y-4 overflow-hidden py-4">
 
               <PageSelector
@@ -61,6 +63,7 @@ export const PdfPreview = () => {
                 isProcessing={isProcessing}
                 numPdfGenerado={numPdfGenerado}
                 onGeneratePdfs={handleGeneratePdfs}
+                sendToOpenai={sendToOpenai}
               />
 
             </CardContent>

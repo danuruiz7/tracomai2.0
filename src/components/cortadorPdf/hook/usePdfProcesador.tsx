@@ -1,3 +1,5 @@
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import { PDFDocument } from "pdf-lib";
 import { useCallback, useState } from "react";
 import { pdfjs } from "react-pdf";
@@ -6,6 +8,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 interface Range {
   start: number | null;
   end: number | null;
+}
+
+interface FiletoSend {
+  blob: Blob;
+  filename: string;
 }
 
 export const usePdfProcesador = () => {
@@ -17,6 +24,10 @@ export const usePdfProcesador = () => {
   const [selectedGroups, setSelectedGroups] = useState<number[][]>([]);//Grupos de páginas que se van a procesar
   const [isProcessing, setIsProcessing] = useState<boolean>(false); //Indica si se está procesando el archivo PDF
   const [numPdfGenerado, setNumPdfGenerado] = useState<number>(0)
+
+  const { handleDataAi } = useAuth();
+
+  const router = useRouter();
 
 
   const handleFileChange = async (filePDF: File) => {
@@ -120,6 +131,78 @@ export const usePdfProcesador = () => {
     }
   };
 
+  const sendToOpenai = async () => {
+    if (!file || selectedGroups.length === 0) {
+      alert("Error: No hay grupos seleccionados.");
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const blobsArray = []; // Array para almacenar los blobs de los PDFs generados
+
+      for (let i = 0; i < selectedGroups.length; i++) {
+        const group = selectedGroups[i];
+        const newPdf = await PDFDocument.create();
+        for (const pageIndex of group) {
+          const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIndex - 1]);
+          newPdf.addPage(copiedPage);
+        }
+
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        blobsArray.push({
+          blob,
+          filename: `${file.name.replace(/\s+/g, "")}_${group[0]}_a_${group[group.length - 1]}.pdf`,
+        });
+
+        setNumPdfGenerado(i + 1);
+      }
+      if (blobsArray.length <= 0) {
+        alert("No se han encontrado PDFs para generar texto");
+        return;
+      }
+      const dataAi = await sendToOpenai2(blobsArray);
+      handleDataAi(dataAi);
+
+      router.push("/dashboard/generar-excel?origin=cortadorpdf");
+
+    } catch (error) {
+      alert("Un error ha ocurrido al generar los PDFs");
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  const sendToOpenai2 = async (blobsArray: FiletoSend[]) => {
+    try {
+      const formData = new FormData();
+
+      blobsArray.forEach((pdf, index) => {
+        formData.append(`pdfs[${index}]`, pdf.blob, pdf.filename);
+      });
+
+      const response = await fetch("/api/openai", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al enviar los PDFs al API");
+      }
+
+      const data = await response.json(); // Obtener la respuesta JSON
+      alert("Los PDFs fueron enviados con éxito");
+      return data;
+    } catch (error) {
+      console.error("Error al enviar los PDFs:", error);
+      alert("Ocurrió un error al enviar los PDFs al API");
+    }
+
+
+  }
 
   // Función que actualiza el PDF previsualizado
   const updatePdfPreview = useCallback(async () => {
@@ -184,6 +267,7 @@ export const usePdfProcesador = () => {
     handleSaveGroup,
     handleDeleteGroup,
     handleGeneratePdfs,
+    sendToOpenai,
     updatePdfPreview,
   };
 

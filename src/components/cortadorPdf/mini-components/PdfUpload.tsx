@@ -1,6 +1,6 @@
 import { Upload } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Input } from "../ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
+import { Input } from "../../ui/input"
 
 interface Props {
   onFileChange: (file: File) => void
@@ -18,7 +18,7 @@ const PdfUpload = ({ onFileChange }: Props) => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto  shadow-xl shadow-slate-600/50 rounded-lg mt-32">
       <CardHeader>
         <CardTitle className="text-center">Sube PDF</CardTitle>
       </CardHeader>
