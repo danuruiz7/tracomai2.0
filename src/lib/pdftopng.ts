@@ -2,7 +2,7 @@ import { exec } from 'child_process'; // para ejecutar comandos en el sistema op
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-// import pdfPoppler from 'pdf-poppler'; // para convertir pdf a imágenes en windows
+import pdfPoppler from 'pdf-poppler'; // para convertir pdf a imágenes en windows
 import Tesseract from 'tesseract.js';
 import { promisify } from 'util'; // para convertir callbacks a funciones que devuelvan promesas
 
@@ -50,7 +50,7 @@ export const convertPdfBufferToImage = async (
         .map((file) => path.join(tempDir, file));
     } else {
       // Usar pdf-poppler como alternativa
-      /*const options = {
+      const options = {
         format: 'png',
         out_dir: tempDir,
         out_prefix: path.basename(outputPrefix), // Solo el prefijo, no la ruta completa
@@ -60,7 +60,7 @@ export const convertPdfBufferToImage = async (
       imagePaths = fs
         .readdirSync(tempDir)
         .filter((file) => file.startsWith(path.basename(outputPrefix)))
-        .map((file) => path.join(tempDir, file));*/
+        .map((file) => path.join(tempDir, file));
     }
 
     // Leer cada imagen y extraer texto
@@ -79,7 +79,7 @@ export const convertPdfBufferToImage = async (
       } = await Tesseract.recognize(imageBuffer, 'spa'); // Cambiar idioma si es necesario
       text += extractedText + '\n';
     }
-    return text.replace(/\s+/g, ''); // Quitar espacios extra
+    return text; // Quitar espacios extra
   } finally {
     await unlink(tempPdfPath); // Eliminar archivo temporal
   }

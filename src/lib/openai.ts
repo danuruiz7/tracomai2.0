@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { getRecordPrompts } from "@/actions/activity/getRecordsUser";
 
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -19,7 +20,18 @@ interface ResultArray {
   total_invoice?: number | null; // Importe total de la factura
 }
 
-export const factarasOpenai = async (text: string) => {
+export const facturasOpenai = async (text: string) => {
+
+  let additionalPrompts = ""
+  try {
+    const allPrompts = await getRecordPrompts(1, 1000) // Obtener hasta 1000 prompts
+    if (allPrompts.records.length > 0) {
+      additionalPrompts = allPrompts.records.map((record) => `  - ${record.descripcion}`).join("\n")
+    }
+  } catch (error) {
+    console.error("Error al obtener prompts guardados:", error)
+  }
+
   const prompt = `Extract the invoice data from the following text. 
   Ignore the company details related to "FISCONSULTING GESTION EMPRESARIAL SL" and "C/ PRINCIPE DE VERGARA, 55 3 D."—these are the details of the recipient, not the sender. 
   Additionally, ignore any number that starts with "ES" followed by digits (e.g., "ES8500815519070001309431") as these are bank account numbers. 
@@ -63,13 +75,13 @@ export const factarasOpenai = async (text: string) => {
   - el supplier_nif (CIF o NIF) siempre debe estar en mayúsculas Una letra inicial (según la naturaleza jurídica) + 7 números + código de control (número o letra)
   - para facturas de CURENERGÍA COMERCIALIZADOR DE ÚLTIMO RECURSO S.A.U asegurate que el cif este completo con el formato correspondiente
   - para facturas de ASOCIACIÓN ESPAÑOLA DE CONSULTORES DE EMPRESA - AECEM verifica bien los montos SINIVABASE----IVA------Rec.Equivalencia--TOTALEUROSImporteImponible%Importe%Importe5.61 31.30 21 6.57 43.48
-  `;
+  ${additionalPrompts ? "\n" + additionalPrompts : ""}`;
   if (!text) {
     return [];
   }
-
+  console.log("prompt", prompt);
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages: [
       { role: 'system', content: prompt },
       { role: 'user', content: text }, //aqui va el texto que se extrae de las facturas

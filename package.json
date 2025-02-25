@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.0",
@@ -20,9 +20,9 @@
     "exceljs": "^4.4.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.460.0",
-    "mysql2": "^3.11.4",
+    "mysql2": "^3.12.0",
     "next": "15.0.3",
-    "openai": "^4.73.1",
+    "openai": "^4.85.3",
     "pdf-lib": "^1.17.1",
     "pdf-next": "file:",
     "pdf-parse": "^1.1.1",
@@ -32,8 +32,8 @@
     "react-pdf": "^9.1.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "tesseract.js": "^5.1.1",
-    "tiktoken": "^1.0.17"
+    "tesseract.js": "^6.0.0",
+    "tiktoken": "^1.0.20"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

@@ -7,6 +7,7 @@ interface User {
   id: number;
   email: string;
   name: string;
+  subscription: number; //añadido para el numero de documentos disponibles para el usuario
 }
 
 export const getSession = async () => {

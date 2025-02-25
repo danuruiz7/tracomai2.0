@@ -9,6 +9,7 @@ interface User {
   password_hash: string;
   created_at: string;
   updated_at: string;
+  subscription: number;
 }
 
 export async function POST(req: Request) {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
     // Generar un token JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name ,subscription: user.subscription }, //al lado ortro campo para el token
       process.env.JWT_SECRET,
       {
         expiresIn: expirationTime,
