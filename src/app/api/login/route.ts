@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
 interface User {
-  id: number;
+  rowid: number;
   name: string;
   email: string;
   password_hash: string;
@@ -24,10 +24,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // console.log('Email:', email);
-    // console.log('Contraseña:', password);
-
-    // Buscar el usuario en la base de datos
     const result = await db.query('SELECT * FROM users where email = ?', [
       email,
     ]);
@@ -60,7 +56,12 @@ export async function POST(req: Request) {
 
     // Generar un token JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name ,subscription: user.subscription }, //al lado ortro campo para el token
+      {
+        rowid: user.rowid,
+        email: user.email,
+        name: user.name,
+        subscription: user.subscription,
+      }, //al lado ortro campo para el token
       process.env.JWT_SECRET,
       {
         expiresIn: expirationTime,

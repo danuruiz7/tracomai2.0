@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     return new Response('No file name provided', { status: 400 });
   }
 
-  const filePath = path.resolve('filestorage', user.id.toString(), name);
+  const filePath = path.resolve('filestorage', user.rowid.toString(), name);
   console.log('filePath', filePath);
   try {
     const fileBuffer = fs.readFileSync(filePath);

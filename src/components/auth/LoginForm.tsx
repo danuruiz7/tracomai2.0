@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export function LoginForm() {
-  const [email, setEmail] = useState("druiz@tracom.info")
+  const [email, setEmail] = useState("admin@admin.com")
   const [password, setPassword] = useState("1234")
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)

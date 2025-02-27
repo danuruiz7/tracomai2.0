@@ -173,7 +173,7 @@ export default function InvoiceTable({ initialInvoices }: Props) {
           <TableHeader>
             <TableRow className="bg-gray-100">
               {columnOrder.map(({ key, name, order }) => (
-                <TableHead key={key} className="p-3 border-b border-gray-200">
+                <TableHead key={key} className="p-1 border-b border-gray-200">
                   <div className="flex flex-col space-y-2">
                     {key === "number_row" ? (
                       <span className="font-semibold text-sm text-gray-700">{name}</span>
@@ -204,7 +204,7 @@ export default function InvoiceTable({ initialInvoices }: Props) {
               <React.Fragment key={index}>
                 <TableRow className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   {columnOrder.map(({ key }) => (
-                    <TableCell key={key} className="p-3 border-b border-gray-200">
+                    <TableCell key={key} className="p-1 border-b border-gray-200">
                       {key === "number_row" ? (
                         <Button
                           type="button"
@@ -219,7 +219,7 @@ export default function InvoiceTable({ initialInvoices }: Props) {
                           type={typeof invoice[key] === "number" ? "number" : "text"}
                           value={invoice[key]}
                           onChange={(e) => handleInputChange(index, key, e.target.value)}
-                          className="w-full text-sm border-gray-300 rounded"
+                          className="w-full text-xs border-gray-300 rounded"
                         />
                       )}
                     </TableCell>
@@ -230,7 +230,7 @@ export default function InvoiceTable({ initialInvoices }: Props) {
                   <TableRow>
                     <TableCell colSpan={columnOrder.length} className="p-0 border-b border-gray-200">
                       <div className="w-full flex flex-col">
-                        <div className="flex justify-between items-center bg-gray-100 p-2">
+                        <div className="flex justify-between items-center bg-gray-100 p-1">
                           <span className="font-semibold text-sm text-gray-700">
                             {`${String(invoice.file_url ?? "#")}`}
                           </span>

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 interface User {
-  id: number;
+  rowid: number;
   email: string;
   name: string;
   subscription: number; //añadido para el numero de documentos disponibles para el usuario
@@ -22,6 +22,7 @@ export const getSession = async () => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as User;
+    // console.log({ token: decoded });
     return decoded;
   } catch (error) {
     console.error('Error al verificar el token:', error);

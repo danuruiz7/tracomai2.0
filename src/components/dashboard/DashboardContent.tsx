@@ -3,28 +3,27 @@
 import type React from "react"
 
 
-import { useEffect, useState, useCallback } from "react"
-import { Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
 
 import {
-  getUserSubscription,
-  getTotalRequest,
-  getRecordPrompts,
-  savePrompt,
   deletePrompt,
+  getRecordPrompts,
+  getTotalRequest,
+  getUserSubscription,
+  savePrompt,
 } from "@/actions/activity/getRecordsUser"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface PromptRecord {
   id: number
   tms: string
   descripcion: string
-} 
+}
 
 export function DashboardContent() {
   const [description, setDescription] = useState("")
@@ -129,7 +128,7 @@ export function DashboardContent() {
             <CardTitle className="text-sm font-medium">Nº de facturas interpretadas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{totalRequests}</div>
+            <div className="text-4xl font-bold">{totalRequests ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -137,7 +136,7 @@ export function DashboardContent() {
             <CardTitle className="text-sm font-medium">Nº de facturas disponibles</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{totalSubscription-totalRequests}</div>
+            <div className="text-4xl font-bold">{totalSubscription - totalRequests}</div>
           </CardContent>
         </Card>
       </div>
@@ -155,7 +154,7 @@ export function DashboardContent() {
                   <TableRow>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Descripcion</TableHead>
-                    <TableHead className="w-[60px]">Borrar</TableHead>
+                    <TableHead className="w-[60px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,8 +170,8 @@ export function DashboardContent() {
                         })}
                       </TableCell>
                       <TableCell>{prompt.descripcion}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(prompt.id)}>
+                      <TableCell className="text-center">
+                        <Button className="bg-red-500 text-white border border-transparent hover:bg-transparent hover:text-red-500 hover:border-red-500" variant="ghost" size="icon" onClick={() => handleDelete(prompt.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -208,6 +207,7 @@ export function DashboardContent() {
                   size="icon"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
+
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -236,17 +236,27 @@ export function DashboardContent() {
                   className="flex-1"
                   disabled={isSaving}
                 />
-                <Button type="submit" disabled={isSaving || !description.trim()}>
+                <Button
+                  className="bg-blue-500 text-white"
+                  type="submit"
+                  disabled={isSaving || !description.trim()}
+                >
                   {isSaving ? (
                     <div className="flex items-center gap-2">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       Saving...
                     </div>
                   ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </>
+
+                    !description.trim() ? (
+                      'Escribe un prompts'
+                    ) :
+                      <>
+                        <Plus className="h-4 w-4" />
+                        Agregar
+                      </>
+
+
                   )}
                 </Button>
               </div>
@@ -254,7 +264,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   )
 }
 
