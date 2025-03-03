@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const response = NextResponse.json({ message: 'Inicio de sesión exitoso' });
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: true,
+      secure: false, // TODO: habilitar esta opción en producción cuando se tengo un certificado SSL (https)
       maxAge: expirationTime,
     });
 
